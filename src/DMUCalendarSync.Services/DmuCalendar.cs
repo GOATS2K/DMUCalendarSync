@@ -9,16 +9,12 @@ namespace DMUCalendarSync.Services;
 public interface IDmuCalendar
 {
     public Task<bool> SignIn(string username, string password);
-    public Task GetCalendar();
+    public Task<CampusmCalendar?> GetCalendar(DateTime startDate, DateTime endDate);
     public UserInfo? GetCurrentUser();
 }
 
 public class DmuCalendar : IDmuCalendar
 {
-    private const string StudentLogonUrl =
-        "https://my.dmu.ac.uk/cmauth/login/7269" +
-        "?platform=web&orgCode=891&redirect=%2Fcampusm%2Fhome%23select-profile%2F7269";
-
     private readonly HttpClient _client;
     private UserInfo? _currentUser;
 
@@ -37,8 +33,10 @@ public class DmuCalendar : IDmuCalendar
         // Fetch user info
         var currentTime = (DateTimeOffset) DateTime.Now;
         var unixTime = currentTime.ToUnixTimeSeconds();
-        var infoUri = new UriBuilder("https://my.dmu.ac.uk/campusm/sso/state");
-        infoUri.Query = $"_={unixTime}";
+        var infoUri = new UriBuilder("https://my.dmu.ac.uk/campusm/sso/state")
+        {
+            Query = $"_={unixTime}"
+        };
         var userInfoRequest = await _client.GetAsync(infoUri.ToString());
         var userInfoResponse = await userInfoRequest.Content.ReadFromJsonAsync<CampusmUserInfo>();
 
@@ -53,9 +51,17 @@ public class DmuCalendar : IDmuCalendar
         return userInfoResponse.AuthUserInfo != null;
     }
 
-    public async Task GetCalendar()
+    public async Task<CampusmCalendar?> GetCalendar(DateTime startDate, DateTime endDate)
     {
-        throw new NotImplementedException();
+        const string studentCalendarBaseUrl = "https://my.dmu.ac.uk/campusm/sso/cal2/student_timetable";
+        var studentCalendar = new UriBuilder(studentCalendarBaseUrl)
+        {
+            Query = $"start={startDate.ToUniversalTime():O}" +
+                    $"&end={endDate.ToUniversalTime():O}"
+        };
+        var calendarRequest = await _client.GetAsync(studentCalendar.ToString());
+        var calendarResponse = await calendarRequest.Content.ReadFromJsonAsync<CampusmCalendar>();
+        return calendarResponse;
     }
 
     public UserInfo? GetCurrentUser()
@@ -108,7 +114,10 @@ public class DmuCalendar : IDmuCalendar
         var formContents = new FormUrlEncodedContent(postContents);
 
         // Login via URL by CampusM page.
-        await _client.GetAsync(StudentLogonUrl);
+        const string studentLogonUrl =
+            "https://my.dmu.ac.uk/cmauth/login/7269" +
+            "?platform=web&orgCode=891&redirect=%2Fcampusm%2Fhome%23select-profile%2F7269";
+        await _client.GetAsync(studentLogonUrl);
         var loginRequest =
             await _client.PostAsync("https://idpedir.dmu.ac.uk/nidp/saml2/sso?sid=0&sid=0&uiDestination=contentDiv",
                 formContents);
@@ -135,6 +144,9 @@ public class DmuCalendar : IDmuCalendar
         };
         var myDmuSsoRequest =
             await _client.PostAsync(samlResponse.ResponseUrl, new FormUrlEncodedContent(samlForm));
-        return myDmuSsoRequest.RequestMessage.RequestUri.ToString().StartsWith("https://my.dmu.ac.uk/campusm/home");
+        return myDmuSsoRequest
+            .RequestMessage
+            .RequestUri
+            .ToString().StartsWith("https://my.dmu.ac.uk/campusm/home");
     }
 }
