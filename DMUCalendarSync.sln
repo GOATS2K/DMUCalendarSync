@@ -1,0 +1,22 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DMUCalendarSync", "src\DMUCalendarSync\DMUCalendarSync.csproj", "{9EAFAF44-51F7-4810-AB80-0EE6335619CC}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DMUCalendarSync.Services", "src\DMUCalendarSync.Services\DMUCalendarSync.Services.csproj", "{71FF4E27-7BA6-4A41-89F1-6686BE90389D}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{9EAFAF44-51F7-4810-AB80-0EE6335619CC}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{9EAFAF44-51F7-4810-AB80-0EE6335619CC}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{9EAFAF44-51F7-4810-AB80-0EE6335619CC}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{9EAFAF44-51F7-4810-AB80-0EE6335619CC}.Release|Any CPU.Build.0 = Release|Any CPU
+		{71FF4E27-7BA6-4A41-89F1-6686BE90389D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{71FF4E27-7BA6-4A41-89F1-6686BE90389D}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{71FF4E27-7BA6-4A41-89F1-6686BE90389D}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{71FF4E27-7BA6-4A41-89F1-6686BE90389D}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+EndGlobal
