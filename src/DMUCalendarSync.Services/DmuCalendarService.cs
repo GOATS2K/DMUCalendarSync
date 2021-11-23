@@ -6,21 +6,21 @@ using HtmlAgilityPack;
 
 namespace DMUCalendarSync.Services;
 
-public interface IDmuCalendar
+public interface IDmuCalendarService
 {
     public Task<bool> SignIn(string username, string password);
     public Task<CampusmCalendar?> GetCalendar(DateTime startDate, DateTime endDate);
     public UserInfo? GetCurrentUser();
 }
 
-public class DmuCalendar : IDmuCalendar
+public class DmuCalendarService : IDmuCalendarService
 {
     private readonly HttpClient _client;
     private UserInfo? _currentUser;
 
-    public DmuCalendar()
+    public DmuCalendarService(HttpClient client)
     {
-        _client = new HttpClient();
+        _client = client;
         _currentUser = null;
     }
 
@@ -64,10 +64,7 @@ public class DmuCalendar : IDmuCalendar
         return calendarResponse;
     }
 
-    public UserInfo? GetCurrentUser()
-    {
-        return _currentUser;
-    }
+    public UserInfo? GetCurrentUser() => _currentUser;
 
     private string? ParseReturnUrlFromHtml(Stream stream)
     {
