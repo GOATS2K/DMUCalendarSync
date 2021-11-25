@@ -11,6 +11,7 @@ internal static class Program
         var services = new ServiceCollection();
         services.AddHttpClient<IDmuCalendarService, DmuCalendarService>();
         services.AddHttpClient<IGoogleCalendarService, GoogleCalendarService>();
+        services.AddHttpClient<IOutlookCalendarService, OutlookCalendarService>();
         return services;
     }
     private static async Task Main(string[] args)
