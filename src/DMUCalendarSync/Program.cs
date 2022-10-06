@@ -12,7 +12,6 @@ internal static class Program
     {
         var services = new ServiceCollection();
         services.AddHttpClient<IDmuCalendarService, DmuCalendarService>();
-        services.AddHttpClient<IGoogleCalendarService, GoogleCalendarService>();
         return services;
     }
     
@@ -22,7 +21,7 @@ internal static class Program
         var serviceProvider = services.BuildServiceProvider();
         var outlookClient = new OutlookCalendarService();
 
-        outlookClient.CreateGraphClient();
+        outlookClient.SignIn();
         var user = await outlookClient.GetUserInfo();
         
         await GetDmuCalendar(serviceProvider);
