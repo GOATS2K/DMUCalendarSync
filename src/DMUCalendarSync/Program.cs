@@ -1,6 +1,4 @@
-﻿using Azure.Identity;
-using DMUCalendarSync.Services;
-using DMUCalendarSync.Services.Models;
+﻿using DMUCalendarSync.Services;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Graph;
 
@@ -19,12 +17,24 @@ internal static class Program
     {
         var services = ConfigureServices();
         var serviceProvider = services.BuildServiceProvider();
-        var outlookClient = new OutlookCalendarService();
+        // await GetOutlookCalendar();
+        // await GetDmuCalendar(serviceProvider);
+    }
 
+    private static async Task GetOutlookCalendar()
+    {
+        var outlookClient = new OutlookCalendarService();
         outlookClient.SignIn();
-        var user = await outlookClient.GetUserInfo();
-        
-        await GetDmuCalendar(serviceProvider);
+        var calendars = await outlookClient.GetCalendarList();
+        var allCalendarIds = calendars.Select(c => c.Id);
+
+        var allCalendars = new List<Calendar>();
+        foreach (var calendarId in allCalendarIds)
+        {
+            allCalendars.Add(await outlookClient.GetCalendar(calendarId));
+        }
+
+        Console.WriteLine($"Got {allCalendars.Count} calendars from Outlook.");
     }
 
     private static async Task GetDmuCalendar(ServiceProvider serviceProvider)
