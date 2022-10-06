@@ -17,6 +17,11 @@ internal static class Program
     {
         var services = ConfigureServices();
         var serviceProvider = services.BuildServiceProvider();
+        var gcal = new GoogleCalendarService();
+        await gcal.SignIn();
+        var dcsCal = gcal.GetDCSCalendar();
+        Console.WriteLine(dcsCal.Summary);
+
         // await GetOutlookCalendar();
         // await GetDmuCalendar(serviceProvider);
     }
