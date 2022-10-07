@@ -1,8 +1,6 @@
-using Google.Apis.Auth.OAuth2;
 using Google.Apis.Calendar.v3;
 using Google.Apis.Calendar.v3.Data;
-using Google.Apis.Services;
-using Google.Apis.Util.Store;
+using Calendar = Google.Apis.Calendar.v3.Data.Calendar;
 
 namespace DMUCalendarSync.Services;
 
@@ -10,33 +8,9 @@ public class GoogleCalendarService
 {
     private CalendarService _calendarService;
 
-    public async Task SignIn()
+    public GoogleCalendarService(CalendarService calendarService)
     {
-        var clientId = Environment.GetEnvironmentVariable("DCS_GAPP_CLIENT_ID");
-        var clientSecret = Environment.GetEnvironmentVariable("DCS_GAPP_CLIENT_SECRET");
-
-        if (string.IsNullOrEmpty(clientId) || string.IsNullOrEmpty(clientSecret))
-        {
-            throw new ApplicationException("Unable to sign in to Google. Missing Client ID and secret.");
-        }
-        
-        var userCredential = await GoogleWebAuthorizationBroker.AuthorizeAsync(
-            new ClientSecrets()
-            {
-                ClientId = clientId,
-                ClientSecret = clientSecret
-            },
-            new[] {CalendarService.Scope.Calendar},
-            "user",
-            CancellationToken.None,
-            new FileDataStore("DCS.GCal")
-        ).WaitAsync(CancellationToken.None);
-
-        _calendarService = new CalendarService(new BaseClientService.Initializer()
-        {
-            HttpClientInitializer = userCredential,
-            ApplicationName = "DMUCalendarSync"
-        });
+        _calendarService = calendarService;
     }
 
     public CalendarList GetCalendarList()

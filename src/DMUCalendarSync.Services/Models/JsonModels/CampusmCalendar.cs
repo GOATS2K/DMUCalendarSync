@@ -37,5 +37,5 @@ public class CalendarEvent
 
 public class CampusmCalendar
 {
-    [JsonPropertyName("events")] public List<CalendarEvent> Events { get; set; }
+    [JsonPropertyName("events")] public List<CalendarEvent> Events { get; set; } = null!;
 }
