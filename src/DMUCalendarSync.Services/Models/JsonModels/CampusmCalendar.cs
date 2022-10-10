@@ -33,6 +33,18 @@ public class CalendarEvent
     [JsonPropertyName("meetingURL")] public string? MeetingURL { get; set; }
 
     [JsonPropertyName("meetingURLDesc")] public string? MeetingURLDesc { get; set; }
+
+    public override string ToString()
+    {
+        return $"{Desc1}\n" +
+               $"{Desc2}\n" +
+               $"{Desc3}\n" +
+               $"{CalDate} - {Start} -> {End}\n" +
+               $"{TeacherName} ({TeacherEmail})\n" +
+               $"{LocCode} - {LocAdd1}\n" +
+               $"{Meeting} - {MeetingURL}\n" +
+               $"{MeetingURLDesc}";
+    }
 }
 
 public class CampusmCalendar

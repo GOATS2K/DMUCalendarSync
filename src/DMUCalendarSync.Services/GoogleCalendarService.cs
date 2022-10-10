@@ -24,6 +24,12 @@ public class GoogleCalendarService
         return calendars;
     }
 
+    public async Task<Event> CreateCalendarEntry(Event calendarEvent)
+    {
+        var targetCalendar = GetDCSCalendar();
+        return await _calendarService.Events.Insert(calendarEvent, targetCalendar.Id).ExecuteAsync();
+    }
+
     public Calendar GetDCSCalendar()
     {
         var targetCalendarEntry = GetCalendarList().Items.SingleOrDefault(c => c.Summary == "DMUCalendarSync");

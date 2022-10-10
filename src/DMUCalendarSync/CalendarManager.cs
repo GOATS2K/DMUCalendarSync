@@ -1,12 +1,9 @@
-﻿using DMUCalendarSync.Services;
-using DMUCalendarSync.Services.Models;
-using Google.Apis.Calendar.v3.Data;
-using Microsoft.Extensions.DependencyInjection;
-using System;
-using System.Collections.Generic;
-using System.Linq;
+﻿using System.Security.Cryptography;
 using System.Text;
-using System.Threading.Tasks;
+using DMUCalendarSync.Services;
+using DMUCalendarSync.Services.Models;
+using Google.Apis.Auth.OAuth2;
+using Google.Apis.Calendar.v3.Data;
 
 namespace DMUCalendarSync
 {
@@ -14,7 +11,8 @@ namespace DMUCalendarSync
     {
         public Task<CampusmCalendar?> GetDmuCalendar();
         public Task<Calendar> GetGoogleCalendar();
-
+        public string GenerateHashForEvent(CalendarEvent calendarEvent);
+        public Task SyncToGoogleCalendar();
     }
 
     class CalendarManager : ICalendarManager
@@ -24,6 +22,38 @@ namespace DMUCalendarSync
         public CalendarManager(IMyDmuService myDmuService)
         {
             _myDmuService = myDmuService;
+        }
+
+        public async Task SyncToGoogleCalendar()
+        {
+            var dmuCalendar = await GetDmuCalendar();
+            if (dmuCalendar == null)
+            {
+                return;
+            }
+            
+            var gCalService = await GetGoogleCalendarService();
+            foreach (var calendarEvent in dmuCalendar.Events)
+            {
+                var eventHash = GenerateHashForEvent(calendarEvent);
+                var syncedEvent = await gCalService.CreateCalendarEntry(new Event()
+                {
+                    Start = new EventDateTime()
+                    {
+                        DateTime = calendarEvent.Start
+                    },
+                    End = new EventDateTime()
+                    {
+                        DateTime = calendarEvent.End
+                    },
+                    Summary = calendarEvent.Desc1,
+                    Location = calendarEvent.LocAdd1,
+                    Description = eventHash
+                });
+                Console.WriteLine($"Synced event: {calendarEvent.Desc1}" +
+                                  $" at {calendarEvent.Start}" +
+                                  $" with GCal ID {syncedEvent.Id}");
+            }
         }
 
         public async Task<CampusmCalendar?> GetDmuCalendar()
@@ -44,9 +74,25 @@ namespace DMUCalendarSync
 
         public async Task<Calendar> GetGoogleCalendar()
         {
+            var gcal = await GetGoogleCalendarService();
+            return gcal.GetDCSCalendar();
+        }
+
+        private static async Task<GoogleCalendarService> GetGoogleCalendarService()
+        {
             var calendarClient = await GoogleCalendarClient.ConfigureClient();
             var gcal = new GoogleCalendarService(calendarClient);
-            return gcal.GetDCSCalendar();
+            return gcal;
+        }
+
+        public string GenerateHashForEvent(CalendarEvent calendarEvent)
+        {
+            var uniqueCalendarString = calendarEvent.ToString();
+            
+            using var hasher = SHA256.Create();
+            var hashedBytes = hasher.ComputeHash(Encoding.UTF8.GetBytes(uniqueCalendarString));
+
+            return Convert.ToHexString(hashedBytes);
         }
     }
 }

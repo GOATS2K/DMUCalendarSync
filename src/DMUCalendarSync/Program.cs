@@ -23,7 +23,7 @@ internal static class Program
         var serviceProvider = services.BuildServiceProvider();
 
         var calendarManager = serviceProvider.GetRequiredService<ICalendarManager>();
-        var dmuCal = await calendarManager.GetDmuCalendar();
+        await calendarManager.SyncToGoogleCalendar();
 
         // await GetDmuCalendar(serviceProvider);
     }
