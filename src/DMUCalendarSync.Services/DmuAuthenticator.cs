@@ -1,44 +1,42 @@
 ﻿using DMUCalendarSync.Services.Models.JsonModels;
 using DMUCalendarSync.Services.Models;
 using HtmlAgilityPack;
+using RestSharp;
+using RestSharp.Authenticators;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Net.Http.Json;
+using System.Net;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
+using System.Net.Http.Json;
 
 namespace DMUCalendarSync.Services
 {
-    public interface IDmuCalendarClient
+    public class DmuAuthenticator : IAuthenticator
     {
-        public HttpClient GetHttpClient();
-        public Task<bool> ConfigureClient(string username, string password);
-        public UserInfo? GetCurrentUser();
-    }
+        public readonly string _username;
+        public readonly string _password;
 
-    public class DmuCalendarClient : IDmuCalendarClient
-    {
-        public HttpClient _client;
-        private UserInfo? _currentUser;
-
-        public DmuCalendarClient(HttpClient client)
+        public DmuAuthenticator(string username, string password)
         {
-            _client = client;
-            _currentUser = null;
-        }
-        
-        public HttpClient GetHttpClient()
-        {
-            return _client;
+            _username = username;
+            _password = password;
         }
 
-        public async Task<bool> ConfigureClient(string username, string password)
+        public async Task<CookieContainer> ConfigureClient()
         {
+            // prepare httpclient for cookie fetching
+            var cookieContainer = new CookieContainer();
+            var client = new HttpClient(new HttpClientHandler()
+            {
+                CookieContainer = cookieContainer
+            });
+
             // Perform sign-in
-            var loginSuccess = await SignInViaSsoPage(username, password);
-            if (!loginSuccess) return loginSuccess;
+            var loginSuccess = await SignInViaSsoPage(client);
+            if (!loginSuccess) return cookieContainer;
 
             // Fetch user info
             var currentTime = (DateTimeOffset)DateTime.Now;
@@ -47,23 +45,13 @@ namespace DMUCalendarSync.Services
             {
                 Query = $"_={unixTime}"
             };
-            var userInfoRequest = await _client.GetAsync(infoUri.ToString());
+            var userInfoRequest = await client.GetAsync(infoUri.ToString());
             var userInfoResponse = await userInfoRequest.Content.ReadFromJsonAsync<CampusmUserInfo>();
 
-            if (userInfoResponse == null) return false;
+            if (userInfoResponse == null) return cookieContainer;
 
-            // Set user member variable
-            _currentUser = new UserInfo
-            {
-                UserId = int.Parse(userInfoResponse.PersonId),
-                FirstName = userInfoResponse.Firstname,
-                Surname = userInfoResponse.Surname,
-                Email = userInfoResponse.Email
-            };
-            return userInfoResponse.AuthUserInfo != null;
+            return cookieContainer;
         }
-
-        public UserInfo? GetCurrentUser() => _currentUser;
 
         private string? ParseReturnUrlFromHtml(Stream stream)
         {
@@ -98,14 +86,14 @@ namespace DMUCalendarSync.Services
             return samlResponse;
         }
 
-        private async Task<bool> SignInViaSsoPage(string username, string password)
+        private async Task<bool> SignInViaSsoPage(HttpClient client)
         {
             // Construct form fields for sign-in page
             var postContents = new Dictionary<string, string>
         {
             {"option", "credential"},
-            {"Ecom_User_ID", username},
-            {"Ecom_Password", password}
+            {"Ecom_User_ID", _username},
+            {"Ecom_Password", _password}
         };
             var formContents = new FormUrlEncodedContent(postContents);
 
@@ -113,9 +101,11 @@ namespace DMUCalendarSync.Services
             const string studentLogonUrl =
                 "https://my.dmu.ac.uk/cmauth/login/7269" +
                 "?platform=web&orgCode=891&redirect=%2Fcampusm%2Fhome%23select-profile%2F7269";
-            await _client.GetAsync(studentLogonUrl);
+
+            await client.GetAsync(studentLogonUrl);
+
             var loginRequest =
-                await _client.PostAsync("https://idpedir.dmu.ac.uk/nidp/saml2/sso?sid=0&sid=0&uiDestination=contentDiv",
+                await client.PostAsync("https://idpedir.dmu.ac.uk/nidp/saml2/sso?sid=0&sid=0&uiDestination=contentDiv",
                     formContents);
 
             // Get response from login
@@ -126,7 +116,7 @@ namespace DMUCalendarSync.Services
             if (loginReturnUrl == null) return false;
 
             // Parse redirect url from response
-            var ssoResponse = await _client.GetAsync(loginReturnUrl);
+            var ssoResponse = await client.GetAsync(loginReturnUrl);
             var ssoResponseDocument = await ssoResponse.Content.ReadAsStreamAsync();
 
             // Get SAML Response and RelayState from incoming document
@@ -139,14 +129,28 @@ namespace DMUCalendarSync.Services
             {"RelayState", samlResponse.RelayState}
         };
             var myDmuSsoRequest =
-                await _client.PostAsync(samlResponse.ResponseUrl, new FormUrlEncodedContent(samlForm));
-            
-            if (myDmuSsoRequest == null) return false;
+                await client.PostAsync(samlResponse.ResponseUrl, new FormUrlEncodedContent(samlForm));
 
+
+            if (myDmuSsoRequest == null) return false;
             return myDmuSsoRequest
                 .RequestMessage!
                 .RequestUri!
                 .ToString().StartsWith("https://my.dmu.ac.uk/campusm/home");
+        }
+
+        public async ValueTask Authenticate(RestClient client, RestRequest request)
+        {
+            var cookieContainer = await ConfigureClient();
+
+            // check that the cookies we need were allocated
+            var myDmuCookies = cookieContainer.GetCookies(new Uri("https://my.dmu.ac.uk"));
+            if (myDmuCookies.Count == 0)
+            {
+                throw new ApplicationException("Invalid credentials, we didn't get the expected MyDMU cookies.");
+            }
+
+            client.CookieContainer.Add(cookieContainer.GetAllCookies());
         }
     }
 }
