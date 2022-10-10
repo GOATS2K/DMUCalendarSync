@@ -27,7 +27,9 @@ public class GoogleCalendarService
     public async Task<Event> CreateCalendarEntry(Event calendarEvent)
     {
         var targetCalendar = GetDCSCalendar();
-        return await _calendarService.Events.Insert(calendarEvent, targetCalendar.Id).ExecuteAsync();
+        var insertRequest = _calendarService.Events.Insert(calendarEvent, targetCalendar.Id);
+        insertRequest.ConferenceDataVersion = 1;
+        return await insertRequest.ExecuteAsync();
     }
 
     public Calendar GetDCSCalendar()

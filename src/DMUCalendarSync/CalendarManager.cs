@@ -9,9 +9,6 @@ namespace DMUCalendarSync
 {
     public interface ICalendarManager
     {
-        public Task<CampusmCalendar?> GetDmuCalendar();
-        public Task<Calendar> GetGoogleCalendar();
-        public string GenerateHashForEvent(CalendarEvent calendarEvent);
         public Task SyncToGoogleCalendar();
     }
 
@@ -32,11 +29,16 @@ namespace DMUCalendarSync
                 return;
             }
             
+            // var bracketMatchingExpression = @"(?=\[)(.*?)(?=\])";
+
             var gCalService = await GetGoogleCalendarService();
             foreach (var calendarEvent in dmuCalendar.Events)
             {
-                var eventHash = GenerateHashForEvent(calendarEvent);
-                var syncedEvent = await gCalService.CreateCalendarEntry(new Event()
+                var currentTime = DateTime.UtcNow;
+                var eventHash = GenerateHashForEvent(calendarEvent).Substring(0, 8);
+                var parsedEventTitle = _myDmuService.ParseCalendarEventTitle(calendarEvent.Desc1!);
+                
+                var gCalEvent = new Event()
                 {
                     Start = new EventDateTime()
                     {
@@ -46,17 +48,46 @@ namespace DMUCalendarSync
                     {
                         DateTime = calendarEvent.End
                     },
-                    Summary = calendarEvent.Desc1,
+                    Summary = $"{parsedEventTitle.ModuleName} - {parsedEventTitle.ModuleId}",
                     Location = calendarEvent.LocAdd1,
-                    Description = eventHash
-                });
+                    Description = $"[{eventHash}] Synced at: {currentTime:s}"
+                };
+
+                if (parsedEventTitle.Online)
+                {
+                    gCalEvent.ConferenceData = new ConferenceData()
+                    {
+                        ConferenceId = eventHash,
+                        ConferenceSolution = new ConferenceSolution()
+                        {
+                            Name = "Microsoft Teams",
+                            Key = new ConferenceSolutionKey()
+                            {
+                                Type = "addOn"
+                            },
+                        },
+                        EntryPoints = new List<EntryPoint>()
+                        {
+                            new()
+                            {
+                                Label = "Teams Meeting URL",
+                                Uri = calendarEvent.MeetingURL,
+                                EntryPointType = "video"
+                            }
+                        },
+                        Notes = calendarEvent.MeetingURLDesc,
+                    };
+                }
+
+                var syncedEvent = await gCalService.CreateCalendarEntry(gCalEvent);
+                
                 Console.WriteLine($"Synced event: {calendarEvent.Desc1}" +
-                                  $" at {calendarEvent.Start}" +
+                                  $" at {calendarEvent.Start}" +    
                                   $" with GCal ID {syncedEvent.Id}");
             }
         }
 
-        public async Task<CampusmCalendar?> GetDmuCalendar()
+        private async Task<CampusmCalendar?> GetDmuCalendar()
         {
             var username = Environment.GetEnvironmentVariable("DCS_DMU_USER");
             var password = Environment.GetEnvironmentVariable("DCS_DMU_PASS");
@@ -85,7 +116,7 @@ namespace DMUCalendarSync
             return gcal;
         }
 
-        public string GenerateHashForEvent(CalendarEvent calendarEvent)
+        private string GenerateHashForEvent(CalendarEvent calendarEvent)
         {
             var uniqueCalendarString = calendarEvent.ToString();
             
