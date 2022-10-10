@@ -1,3 +1,4 @@
+using DMUCalendarSync.Services.Models;
 using Google.Apis.Calendar.v3;
 using Google.Apis.Calendar.v3.Data;
 using Calendar = Google.Apis.Calendar.v3.Data.Calendar;
@@ -12,8 +13,7 @@ public class GoogleCalendarService
     {
         _calendarService = calendarService;
     }
-
-    public CalendarList GetCalendarList()
+    private CalendarList GetCalendarList()
     {
         var calendars = _calendarService.CalendarList.List().Execute();
         if (!calendars.Items.Any())
@@ -22,6 +22,21 @@ public class GoogleCalendarService
         }
 
         return calendars;
+    }
+
+    public async Task<Event> UpdateEvent(Event newEvent, string oldEventId)
+    {
+        var calendar = GetDCSCalendar();
+        return await _calendarService.Events.Update(newEvent, calendar.Id, oldEventId).ExecuteAsync();
+    }
+
+    public async Task<Events> GetEventsOnDay(DateTime date)
+    {
+        var calendar = GetDCSCalendar();
+        var eventRequest = _calendarService.Events
+            .List(calendar.Id);
+        eventRequest.TimeMin = date;
+        return await eventRequest.ExecuteAsync();
     }
 
     public async Task<Event> CreateCalendarEntry(Event calendarEvent)
@@ -50,5 +65,5 @@ public class GoogleCalendarService
         }
 
         return _calendarService.Calendars.Get(targetCalendarEntry.Id).Execute();
-    } 
+    }
 }

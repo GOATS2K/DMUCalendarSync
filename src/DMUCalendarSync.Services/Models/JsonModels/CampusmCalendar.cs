@@ -11,11 +11,11 @@ public class CalendarEvent
 
     [JsonPropertyName("desc3")] public string? Desc3 { get; set; }
 
-    [JsonPropertyName("calDate")] public DateTime? CalDate { get; set; }
+    [JsonPropertyName("calDate")] public DateTime CalDate { get; set; }
 
-    [JsonPropertyName("start")] public DateTime? Start { get; set; }
+    [JsonPropertyName("start")] public DateTime Start { get; set; }
 
-    [JsonPropertyName("end")] public DateTime? End { get; set; }
+    [JsonPropertyName("end")] public DateTime End { get; set; }
 
     [JsonPropertyName("teacherName")] public string? TeacherName { get; set; }
 
