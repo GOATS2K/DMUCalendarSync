@@ -19,12 +19,11 @@ namespace DMUCalendarSync
 
     class CalendarManager : ICalendarManager
     {
-        private void CacheCredentials(string username)
+        private readonly IMyDmuService _myDmuService;
+
+        public CalendarManager(IMyDmuService myDmuService)
         {
-            var dcsCache = Path.Combine(Environment.SpecialFolder.LocalApplicationData.ToString(), "DCS");
-            Directory.CreateDirectory(dcsCache);
-
-
+            _myDmuService = myDmuService;
         }
 
         public async Task<CampusmCalendar?> GetDmuCalendar()
@@ -34,11 +33,11 @@ namespace DMUCalendarSync
 
             if (username != null && password != null)
             {
-                var myDmuService = new MyDmuService(username, password);
-                var user = await myDmuService.GetUser();
+                _myDmuService.SetCredentials(username, password);
+                var user = await _myDmuService.GetUser();
 
-                Console.WriteLine($"Getting calendar data for: {user.Email}");
-                return await myDmuService.GetCalendar(DateTime.Today, DateTime.Today.AddDays(7));
+                Console.WriteLine($"Getting calendar data for: {user?.Email}");
+                return await _myDmuService.GetCalendar(DateTime.Today, DateTime.Today.AddDays(7));
             }
             return null;
         }

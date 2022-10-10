@@ -11,22 +11,39 @@ using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using System.Net.Http.Json;
+using DMUCalendarSync.Database;
+using DMUCalendarSync.Database.Models;
+using Microsoft.EntityFrameworkCore;
 
 namespace DMUCalendarSync.Services
 {
     public class DmuAuthenticator : IAuthenticator
     {
-        public readonly string _username;
-        public readonly string _password;
+        private readonly string _username;
+        private readonly string _password;
+        private readonly DcsDbContext _context;
+        
 
-        public DmuAuthenticator(string username, string password)
+        public DmuAuthenticator(string username, string password, DcsDbContext context)
         {
-            _username = username;
+            _username = username.ToLower();
             _password = password;
+            _context = context;
         }
 
         public async Task<CookieContainer> ConfigureClient()
         {
+            // fetch user info from cache
+            var user = _context.MyDmuUsers.FirstOrDefault(x => x.Username == _username);
+            if (user != null)
+            {
+                var cookieSet = await GetCookieSet(user);
+                if (cookieSet != null)
+                {
+                    return cookieSet;
+                }
+            }
+
             // prepare httpclient for cookie fetching
             var cookieContainer = new CookieContainer();
             var client = new HttpClient(new HttpClientHandler()
@@ -50,6 +67,21 @@ namespace DMUCalendarSync.Services
 
             if (userInfoResponse == null) return cookieContainer;
 
+            // create user if it didn't already exist
+            if (user == null)
+            {
+                user = new MyDmuUser()
+                {
+                    Username = _username,
+                    Password = _password,
+                    FirstName = userInfoResponse.Firstname,
+                    Surname = userInfoResponse.Surname
+                };
+                _context.MyDmuUsers.Add(user);
+                await _context.SaveChangesAsync();
+            }
+
+            await WriteCookieSet(user, cookieContainer);
             return cookieContainer;
         }
 
@@ -139,13 +171,62 @@ namespace DMUCalendarSync.Services
                 .ToString().StartsWith("https://my.dmu.ac.uk/campusm/home");
         }
 
+        private async Task WriteCookieSet(MyDmuUser user, CookieContainer cookieContainer)
+        {
+            var cookieSet = new MyDmuCookieSet()
+            {
+                MyDmuUser = user,
+                Cookies = new List<MyDmuCookie>(),
+            };
+
+            foreach (Cookie cookie in cookieContainer.GetCookies(new Uri("https://my.dmu.ac.uk")))
+            {
+                cookieSet.Cookies.Add(new MyDmuCookie()
+                {
+                    MyDmuUser = user,
+                    Domain = cookie.Domain,
+                    Name = cookie.Name,
+                    Value = cookie.Value,
+                    ExpiryTime = cookie.Expires,
+                });
+            }
+
+            cookieSet.EarliestCookieExpiry = cookieSet.Cookies.Min(c => c.ExpiryTime);
+            _context.MyDmuCookieSets.Add(cookieSet);
+            await _context.SaveChangesAsync();
+        }
+
+        private async Task<CookieContainer?> GetCookieSet(MyDmuUser user)
+        {
+            var cookieSet = await _context.MyDmuCookieSets
+                .Include(c => c.Cookies)
+                .FirstOrDefaultAsync(cs => cs.MyDmuUser.Id == user.Id && cs.EarliestCookieExpiry > DateTime.UtcNow);
+
+            if (cookieSet != null)
+            {
+                var cookieContainer = new CookieContainer();
+                foreach (var cookie in cookieSet.Cookies)
+                {
+                    cookieContainer.Add(new Cookie()
+                    {
+                        Domain = cookie.Domain,
+                        Expires = cookie.ExpiryTime,
+                        Name = cookie.Name,
+                        Value = cookie.Value,
+                    });
+                }
+                return cookieContainer;
+            }
+            return null;
+        }
+
         public async ValueTask Authenticate(RestClient client, RestRequest request)
         {
             var cookieContainer = await ConfigureClient();
 
             // check that the cookies we need were allocated
             var myDmuCookies = cookieContainer.GetCookies(new Uri("https://my.dmu.ac.uk"));
-            if (myDmuCookies.Count == 0)
+            if (!myDmuCookies.Any())
             {
                 throw new ApplicationException("Invalid credentials, we didn't get the expected MyDMU cookies.");
             }

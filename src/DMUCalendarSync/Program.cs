@@ -1,4 +1,5 @@
-﻿using DMUCalendarSync.Services;
+﻿using DMUCalendarSync.Database;
+using DMUCalendarSync.Services;
 using Microsoft.Extensions.DependencyInjection;
 using System.Net;
 
@@ -10,6 +11,8 @@ internal static class Program
     {
         var services = new ServiceCollection();
         services.AddScoped<ICalendarManager, CalendarManager>();
+        services.AddScoped<IMyDmuService, MyDmuService>();
+        services.AddDbContext<DcsDbContext>();
         // services.AddHttpClient<IDmuCalendarClient, DmuCalendarClient>();
         return services;
     }

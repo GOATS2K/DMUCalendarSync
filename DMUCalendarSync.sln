@@ -1,8 +1,15 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DMUCalendarSync", "src\DMUCalendarSync\DMUCalendarSync.csproj", "{9EAFAF44-51F7-4810-AB80-0EE6335619CC}"
+# Visual Studio Version 17
+VisualStudioVersion = 17.3.32825.248
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DMUCalendarSync", "src\DMUCalendarSync\DMUCalendarSync.csproj", "{9EAFAF44-51F7-4810-AB80-0EE6335619CC}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DMUCalendarSync.Services", "src\DMUCalendarSync.Services\DMUCalendarSync.Services.csproj", "{71FF4E27-7BA6-4A41-89F1-6686BE90389D}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DMUCalendarSync.Services", "src\DMUCalendarSync.Services\DMUCalendarSync.Services.csproj", "{71FF4E27-7BA6-4A41-89F1-6686BE90389D}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DMUCalendarSync.Database", "src\DMUCalendarSync.Database\DMUCalendarSync.Database.csproj", "{25B6FDD7-A6F2-4A05-B726-4909B2278A0E}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DMUCalendarSync.Database.Models", "src\DMUCalendarSync.Database.Models\DMUCalendarSync.Database.Models.csproj", "{76B6E06A-537D-4F1A-93E1-85C86820DF80}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -18,5 +25,19 @@ Global
 		{71FF4E27-7BA6-4A41-89F1-6686BE90389D}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{71FF4E27-7BA6-4A41-89F1-6686BE90389D}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{71FF4E27-7BA6-4A41-89F1-6686BE90389D}.Release|Any CPU.Build.0 = Release|Any CPU
+		{25B6FDD7-A6F2-4A05-B726-4909B2278A0E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{25B6FDD7-A6F2-4A05-B726-4909B2278A0E}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{25B6FDD7-A6F2-4A05-B726-4909B2278A0E}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{25B6FDD7-A6F2-4A05-B726-4909B2278A0E}.Release|Any CPU.Build.0 = Release|Any CPU
+		{76B6E06A-537D-4F1A-93E1-85C86820DF80}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{76B6E06A-537D-4F1A-93E1-85C86820DF80}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{76B6E06A-537D-4F1A-93E1-85C86820DF80}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{76B6E06A-537D-4F1A-93E1-85C86820DF80}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {510E7738-40E9-4DDC-8787-3BB61ABE51E6}
 	EndGlobalSection
 EndGlobal
