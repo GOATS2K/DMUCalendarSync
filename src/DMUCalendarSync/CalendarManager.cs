@@ -29,6 +29,7 @@ internal class CalendarManager : ICalendarManager
         foreach (var calendarEvent in dmuCalendar.Events)
         {
             var generatedEvent = CreateGCalEvent(calendarEvent);
+            // TODO: get events for the whole week and iterate on that instead
             var gCalEvents = await gCalService.GetEventsOnDay(calendarEvent.Start.Date);
             var existingEvent = gCalEvents.Items.FirstOrDefault(e =>
                 e.Summary == generatedEvent.Summary
@@ -76,6 +77,12 @@ internal class CalendarManager : ICalendarManager
         var eventHash = GenerateHashForEvent(calendarEvent);
         var parsedEventTitle = _myDmuService.ParseCalendarEventTitle(calendarEvent.Desc1!);
 
+        var teacherInfo = calendarEvent.TeacherName.Trim();
+        if (!string.IsNullOrEmpty(calendarEvent.TeacherEmail))
+        {
+            teacherInfo += $" ({calendarEvent.TeacherEmail.Trim().ToLower()})";
+        }
+
         var gCalEvent = new Event
         {
             Start = new EventDateTime
@@ -88,7 +95,8 @@ internal class CalendarManager : ICalendarManager
             },
             Summary = $"{parsedEventTitle.ModuleName} - {parsedEventTitle.ModuleId}",
             Location = calendarEvent.LocAdd1,
-            Description = $"[{eventHash}] Synced at: {currentTime:s}",
+            Description = $"Session taught by {teacherInfo}\n" +
+                          $"[{eventHash}] Synced at: {currentTime:s}",
             Reminders = new Event.RemindersData
             {
                 UseDefault = false,
