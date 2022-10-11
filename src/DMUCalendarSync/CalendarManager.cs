@@ -77,7 +77,7 @@ internal class CalendarManager : ICalendarManager
         var eventHash = GenerateHashForEvent(calendarEvent);
         var parsedEventTitle = _myDmuService.ParseCalendarEventTitle(calendarEvent.Desc1!);
 
-        var teacherInfo = calendarEvent.TeacherName.Trim();
+        var teacherInfo = calendarEvent.TeacherName?.Trim();
         if (!string.IsNullOrEmpty(calendarEvent.TeacherEmail))
         {
             teacherInfo += $" ({calendarEvent.TeacherEmail.Trim().ToLower()})";
