@@ -7,11 +7,8 @@ namespace DMUCalendarSync.Services;
 
 public static class GoogleCalendarClient
 {
-    public static async Task<CalendarService> ConfigureClient()
+    public static async Task<CalendarService> ConfigureClient(string clientId, string clientSecret)
     {
-        var clientId = Environment.GetEnvironmentVariable("DCS_GAPP_CLIENT_ID");
-        var clientSecret = Environment.GetEnvironmentVariable("DCS_GAPP_CLIENT_SECRET");
-
         if (string.IsNullOrEmpty(clientId) || string.IsNullOrEmpty(clientSecret))
             throw new ApplicationException("Unable to sign in to Google. Missing Client ID and secret.");
 

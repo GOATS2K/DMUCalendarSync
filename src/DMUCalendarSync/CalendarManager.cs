@@ -15,14 +15,18 @@ public interface ICalendarManager
 internal class CalendarManager : ICalendarManager
 {
     private readonly IMyDmuService _myDmuService;
+    private readonly ApplicationArguments _applicationArguments;
 
-    public CalendarManager(IMyDmuService myDmuService)
+    public CalendarManager(IMyDmuService myDmuService, ApplicationArguments applicationArguments)
     {
         _myDmuService = myDmuService;
+        _applicationArguments = applicationArguments;
     }
 
     public async Task SyncToGoogleCalendar()
     {
+        Console.WriteLine($"[{DateTime.UtcNow:s}] Fetching latest data...");
+        
         var dmuCalendar = await GetDmuCalendar();
         if (dmuCalendar == null) return;
         var gCalService = await GetGoogleCalendarService();
@@ -140,15 +144,12 @@ internal class CalendarManager : ICalendarManager
 
     private async Task<CampusmCalendar?> GetDmuCalendar()
     {
-        var username = Environment.GetEnvironmentVariable("DCS_DMU_USER");
-        var password = Environment.GetEnvironmentVariable("DCS_DMU_PASS");
+        var username = _applicationArguments.DmuUsername;
+        var password = _applicationArguments.DmuPassword;
 
-        if (username != null && password != null)
+        if (!string.IsNullOrEmpty(username) && !string.IsNullOrEmpty(password))
         {
             _myDmuService.SetCredentials(username, password);
-            var user = await _myDmuService.GetUser();
-
-            Console.WriteLine($"Getting calendar data for: {user?.Email}");
             return await _myDmuService.GetCalendar(DateTime.Today, DateTime.Today.AddDays(7));
         }
 
@@ -161,9 +162,12 @@ internal class CalendarManager : ICalendarManager
         return gcal.GetDCSCalendar();
     }
 
-    private static async Task<GoogleCalendarService> GetGoogleCalendarService()
+    private async Task<GoogleCalendarService> GetGoogleCalendarService()
     {
-        var calendarClient = await GoogleCalendarClient.ConfigureClient();
+        var clientId = _applicationArguments.GoogleAppClientId;
+        var clientSecret = _applicationArguments.GoogleAppClientSecret;
+        
+        var calendarClient = await GoogleCalendarClient.ConfigureClient(clientId, clientSecret);
         var gcal = new GoogleCalendarService(calendarClient);
         return gcal;
     }
