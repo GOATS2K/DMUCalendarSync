@@ -34,16 +34,21 @@ public class CalendarEvent
 
     [JsonPropertyName("meetingURLDesc")] public string? MeetingURLDesc { get; set; }
 
+    public string GetLongCalendarString()
+    {
+        return $"{Desc1}" +
+               $"{Desc2}" +
+               $"{Desc3}" +
+               $"{Start.ToUniversalTime():s} UTC to {End.ToUniversalTime():s} UTC" +
+               $"{TeacherName} ({TeacherEmail})" +
+               $"{LocCode} - {LocAdd1}" +
+               $"{Meeting} - {MeetingURL}" +
+               $"{MeetingURLDesc}";
+    }
+    
     public override string ToString()
     {
-        return $"{Desc1}\n" +
-               $"{Desc2}\n" +
-               $"{Desc3}\n" +
-               $"{CalDate} - {Start} -> {End}\n" +
-               $"{TeacherName} ({TeacherEmail})\n" +
-               $"{LocCode} - {LocAdd1}\n" +
-               $"{Meeting} - {MeetingURL}\n" +
-               $"{MeetingURLDesc}";
+        return $"{Desc1} - {Start} to {End}"; 
     }
 }
 

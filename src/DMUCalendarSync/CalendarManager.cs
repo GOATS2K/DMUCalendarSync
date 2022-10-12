@@ -56,6 +56,11 @@ internal class CalendarManager : ICalendarManager
                                       $" at {calendarEvent.Start}" +
                                       $" with GCal ID {updatedEvent.Id}");
                 }
+                else
+                {
+                    Console.WriteLine($"Up to date: {existingEvent.Summary}" +
+                                      $" at {calendarEvent.Start}");
+                }
             }
         }
     }
@@ -64,7 +69,7 @@ internal class CalendarManager : ICalendarManager
     {
         // check event hash
         var bracketMatchingExpression = @"(?<=^\[).*?(?=\])";
-        var match = Regex.Match(existingEvent.Description,
+        var match = Regex.Match(existingEvent.Description.Replace("<br>", "\n"),
             bracketMatchingExpression,
             RegexOptions.Multiline);
 
@@ -99,7 +104,8 @@ internal class CalendarManager : ICalendarManager
             },
             Summary = $"{parsedEventTitle.ModuleName} - {parsedEventTitle.ModuleId}",
             Location = calendarEvent.LocAdd1,
-            Description = $"Session taught by {teacherInfo}\n" +
+            Description = $"Session taught by <b>{teacherInfo}</b>" +
+                          "<br>" +
                           $"[{eventHash}] Synced at: {currentTime:s}",
             Reminders = new Event.RemindersData
             {
@@ -155,13 +161,7 @@ internal class CalendarManager : ICalendarManager
 
         return null;
     }
-
-    public async Task<Calendar> GetGoogleCalendar()
-    {
-        var gcal = await GetGoogleCalendarService();
-        return gcal.GetDCSCalendar();
-    }
-
+    
     private async Task<GoogleCalendarService> GetGoogleCalendarService()
     {
         var clientId = _applicationArguments.GoogleAppClientId;
@@ -174,8 +174,9 @@ internal class CalendarManager : ICalendarManager
 
     private string GenerateHashForEvent(CalendarEvent calendarEvent)
     {
-        var uniqueCalendarString = calendarEvent.ToString();
-
+        var uniqueCalendarString = calendarEvent.GetLongCalendarString();
+        // Console.WriteLine($">> Event hasher:\n {uniqueCalendarString}");
+        
         using var hasher = SHA256.Create();
         var hashedBytes = hasher.ComputeHash(Encoding.UTF8.GetBytes(uniqueCalendarString));
 
