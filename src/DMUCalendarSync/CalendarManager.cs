@@ -4,6 +4,8 @@ using System.Text.RegularExpressions;
 using DMUCalendarSync.Services;
 using DMUCalendarSync.Services.Models;
 using Google.Apis.Calendar.v3.Data;
+using Google.Apis.Logging;
+using Microsoft.Extensions.Logging;
 
 namespace DMUCalendarSync;
 
@@ -16,16 +18,18 @@ internal class CalendarManager : ICalendarManager
 {
     private readonly IMyDmuService _myDmuService;
     private readonly ApplicationArguments _applicationArguments;
+    private readonly ILogger<CalendarManager> _logger;
 
-    public CalendarManager(IMyDmuService myDmuService, ApplicationArguments applicationArguments)
+    public CalendarManager(IMyDmuService myDmuService, ApplicationArguments applicationArguments, ILogger<CalendarManager> logger)
     {
         _myDmuService = myDmuService;
         _applicationArguments = applicationArguments;
+        _logger = logger;
     }
 
     public async Task SyncToGoogleCalendar()
     {
-        Console.WriteLine($"[{DateTime.UtcNow:s}] Fetching latest data...");
+        _logger.LogInformation("Fetching latest data...");
         
         var dmuCalendar = await GetDmuCalendar();
         if (dmuCalendar == null) return;
@@ -43,7 +47,7 @@ internal class CalendarManager : ICalendarManager
             if (existingEvent == null)
             {
                 var syncedEvent = await gCalService.CreateCalendarEntry(generatedEvent);
-                Console.WriteLine($"Synced event: {generatedEvent.Summary}" +
+                _logger.LogInformation($"Synced event: {generatedEvent.Summary}" +
                                   $" at {calendarEvent.Start}" +
                                   $" with GCal ID {syncedEvent.Id}");
             }
@@ -52,13 +56,13 @@ internal class CalendarManager : ICalendarManager
                 if (ExistingEventHasChanged(existingEvent, calendarEvent))
                 {
                     var updatedEvent = await gCalService.UpdateEvent(generatedEvent, existingEvent.Id);
-                    Console.WriteLine($"Updated event: {generatedEvent.Summary}" +
+                    _logger.LogInformation($"Updated event: {generatedEvent.Summary}" +
                                       $" at {calendarEvent.Start}" +
                                       $" with GCal ID {updatedEvent.Id}");
                 }
                 else
                 {
-                    Console.WriteLine($"Up to date: {existingEvent.Summary}" +
+                    _logger.LogInformation($"Up to date: {existingEvent.Summary}" +
                                       $" at {calendarEvent.Start}");
                 }
             }
@@ -175,7 +179,7 @@ internal class CalendarManager : ICalendarManager
     private string GenerateHashForEvent(CalendarEvent calendarEvent)
     {
         var uniqueCalendarString = calendarEvent.GetLongCalendarString();
-        // Console.WriteLine($">> Event hasher:\n {uniqueCalendarString}");
+        // _logger.LogInformation($">> Event hasher:\n {uniqueCalendarString}");
         
         using var hasher = SHA256.Create();
         var hashedBytes = hasher.ComputeHash(Encoding.UTF8.GetBytes(uniqueCalendarString));
