@@ -59,6 +59,7 @@ internal static class Program
         while (true)
         {
             await calendarManager.SyncToGoogleCalendar();
+            // multiplier of 3600 seconds (1 hour)
             Thread.Sleep(1 * 3600 * 1000);
         }
     }

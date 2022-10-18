@@ -1,6 +1,8 @@
 ﻿using DMUCalendarSync.Database;
 using DMUCalendarSync.Services.Models;
 using DMUCalendarSync.Services.Models.JsonModels;
+using Google.Apis.Logging;
+using Microsoft.Extensions.Logging;
 using RestSharp;
 
 namespace DMUCalendarSync.Services;
@@ -20,11 +22,14 @@ public class MyDmuService : IMyDmuService
     // assume that we have a fully configured client
     private readonly RestClient _restClient;
 
-    public MyDmuService(DcsDbContext context)
+    private readonly ILogger<MyDmuService> _logger;
+
+    public MyDmuService(DcsDbContext context, ILogger<MyDmuService> logger)
     {
         _context = context;
         var options = new RestClientOptions("https://my.dmu.ac.uk/campusm/sso");
         _restClient = new RestClient(options);
+        _logger = logger;
     }
 
     public void SetCredentials(string username, string password)
@@ -56,7 +61,7 @@ public class MyDmuService : IMyDmuService
 
     public async Task<CampusmUserInfo?> GetUser()
     {
-        var currentTime = (DateTimeOffset) DateTime.Now;
+        var currentTime = (DateTimeOffset)DateTime.Now;
         var unixTime = currentTime.ToUnixTimeSeconds();
         var restRequest = new RestRequest("/state")
             .AddQueryParameter("_", unixTime);
@@ -69,11 +74,19 @@ public class MyDmuService : IMyDmuService
     {
         const string studentCalendarBaseUrl = "/cal2/student_timetable";
 
-        var restRequest = new RestRequest(studentCalendarBaseUrl)
+        CampusmCalendar? calendar = null;
+        try
+        {
+            var restRequest = new RestRequest(studentCalendarBaseUrl)
             .AddQueryParameter("start", $"{startDate.ToUniversalTime():O}")
             .AddQueryParameter("end", $"{endDate.ToUniversalTime():O}");
+            calendar = await _restClient.GetAsync<CampusmCalendar>(restRequest);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning("Failed to get calendar: {message}", ex.Message);
+        }
 
-        var calendarResponse = await _restClient.GetAsync<CampusmCalendar>(restRequest);
-        return calendarResponse;
+        return calendar;
     }
 }

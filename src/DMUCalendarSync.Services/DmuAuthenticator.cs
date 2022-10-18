@@ -41,7 +41,7 @@ public class DmuAuthenticator : IAuthenticator
     public async Task<CookieContainer> ConfigureClient()
     {
         // fetch user info from cache
-        var user = _context.MyDmuUsers.FirstOrDefault(x => x.Username == _username);
+        var user = _context.MyDmuUsers.FirstOrDefault(x => x.Username == _username && x.Password == _password);
         if (user != null)
         {
             var cookieSet = await GetCookieSet(user);
