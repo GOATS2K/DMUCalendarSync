@@ -20,7 +20,7 @@ internal static class Program
             opt.AddSimpleConsole(logger =>
             {
                 logger.UseUtcTimestamp = true;
-                logger.TimestampFormat = "[yyyy-mm-dd HH:mm:ss] ";
+                logger.TimestampFormat = "[yyyy-MM-dd HH:mm:ss] ";
             });
             opt.AddFilter("Microsoft", LogLevel.Warning);
             opt.AddFilter("System", LogLevel.Warning);
